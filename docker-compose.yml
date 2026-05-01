@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:latest
+    container_name: moneytrack_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - moneytrack_network
+
+  # NestJS API Service
+  api:
+    build: .
+    container_name: moneytrack_api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/moneytrack
+      - JWT_SECRET=super-secret-key-change-in-prod
+    depends_on:
+      - mongodb
+    networks:
+      - moneytrack_network
+
+networks:
+  moneytrack_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
