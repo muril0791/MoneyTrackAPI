@@ -1,20 +1,8 @@
 version: '3.8'
 
 services:
-  # --- BANCO DE DADOS ÚNICO ---
-  # O MongoDB isolará os dados pelo nome da database na URI
-  mongodb:
-    image: mongo:latest
-    container_name: moneytrack_db
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - moneytrack_network
-
-  # --- INSTÂNCIA DE PRODUÇÃO (Porta 3000) ---
-  # Atende a: moneytrack-api.muriloferreira.dev
+  # --- AMBIENTE DE PRODUÇÃO (Branch: main) ---
+  # Acessível via: https://moneytrack-api.muriloferreira.dev
   api_prod:
     build: .
     container_name: moneytrack_api_prod
@@ -24,34 +12,32 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://mongodb:27017/moneytrack_prod
-      - JWT_SECRET=sua-chave-secreta-de-producao
-    depends_on:
-      - mongodb
+      # 'host.docker.internal' permite que o container fale com o Mongo instalado no seu Windows
+      - MONGODB_URI=mongodb://host.docker.internal:27017/moneytrack_prod
+      - JWT_SECRET=sua_chave_secreta_producao
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - moneytrack_network
 
-  # --- INSTÂNCIA DE DESENVOLVIMENTO (Porta 3001) ---
-  # Atende a: moneytrack-dev-api.muriloferreira.dev
+  # --- AMBIENTE DE DESENVOLVIMENTO (Branch: dev) ---
+  # Acessível via: https://moneytrack-dev-api.muriloferreira.dev
   api_dev:
     build: .
     container_name: moneytrack_api_dev
     restart: always
     ports:
-      - "3001:3000" # Mapeia a 3001 do Windows para a 3000 do container
+      - "3001:3000" # Mapeia a porta 3001 do Windows para a 3000 do container
     environment:
       - PORT=3000
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://mongodb:27017/moneytrack_dev
-      - JWT_SECRET=chave-de-teste-dev
-    depends_on:
-      - mongodb
+      - MONGODB_URI=mongodb://host.docker.internal:27017/moneytrack_dev
+      - JWT_SECRET=sua_chave_teste_dev
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - moneytrack_network
 
 networks:
   moneytrack_network:
     driver: bridge
-
-volumes:
-  mongodb_data:
