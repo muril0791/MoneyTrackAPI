@@ -1,7 +1,8 @@
 version: '3.8'
 
 services:
-  # MongoDB Database Service
+  # --- BANCO DE DADOS ÚNICO ---
+  # O MongoDB isolará os dados pelo nome da database na URI
   mongodb:
     image: mongo:latest
     container_name: moneytrack_db
@@ -12,16 +13,37 @@ services:
     networks:
       - moneytrack_network
 
-  # NestJS API Service
-  api:
+  # --- INSTÂNCIA DE PRODUÇÃO (Porta 3000) ---
+  # Atende a: moneytrack-api.muriloferreira.dev
+  api_prod:
     build: .
-    container_name: moneytrack_api
+    container_name: moneytrack_api_prod
+    restart: always
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
-      - MONGODB_URI=mongodb://mongodb:27017/moneytrack
-      - JWT_SECRET=super-secret-key-change-in-prod
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/moneytrack_prod
+      - JWT_SECRET=sua-chave-secreta-de-producao
+    depends_on:
+      - mongodb
+    networks:
+      - moneytrack_network
+
+  # --- INSTÂNCIA DE DESENVOLVIMENTO (Porta 3001) ---
+  # Atende a: moneytrack-dev-api.muriloferreira.dev
+  api_dev:
+    build: .
+    container_name: moneytrack_api_dev
+    restart: always
+    ports:
+      - "3001:3000" # Mapeia a 3001 do Windows para a 3000 do container
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/moneytrack_dev
+      - JWT_SECRET=chave-de-teste-dev
     depends_on:
       - mongodb
     networks:
