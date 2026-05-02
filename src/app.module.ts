@@ -9,6 +9,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { CreditCardsModule } from './credit-cards/credit-cards.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { MailModule } from './common/mail/mail.module';
+import { GoalsModule } from './goals/goals.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MailModule } from './common/mail/mail.module';
     CategoriesModule,
     CreditCardsModule,
     MailModule,
+    GoalsModule,
   ],
   providers: [
     {
