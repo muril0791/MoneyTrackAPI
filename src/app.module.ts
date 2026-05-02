@@ -8,6 +8,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { CategoriesModule } from './categories/categories.module';
 import { CreditCardsModule } from './credit-cards/credit-cards.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { MailModule } from './common/mail/mail.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     ExpensesModule,
     CategoriesModule,
     CreditCardsModule,
+    MailModule,
   ],
   providers: [
     {

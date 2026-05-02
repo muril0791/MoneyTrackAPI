@@ -1,13 +1,15 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Controller('expenses')
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
   @Post()
-  create(@CurrentUser() user: any, @Body() createDto: any) {
+  create(@CurrentUser() user: any, @Body() createDto: CreateExpenseDto) {
     return this.expensesService.create(user.id, createDto);
   }
 
@@ -17,7 +19,7 @@ export class ExpensesController {
   }
 
   @Patch(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: UpdateExpenseDto) {
     return this.expensesService.update(user.id, id, updateDto);
   }
 
