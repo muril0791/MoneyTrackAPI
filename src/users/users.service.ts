@@ -19,4 +19,24 @@ export class UsersService {
   async findById(id: string): Promise<User | null> {
     return this.userModel.findById(id).exec();
   }
+
+  async updateRefreshToken(userId: string, refreshTokenHash: string | null): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { refreshTokenHash }).exec();
+  }
+
+  async updatePasswordReset(userId: string, tokenHash: string | null, expires: Date | null): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      resetPasswordToken: tokenHash,
+      resetPasswordExpires: expires,
+    }).exec();
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      passwordHash,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+      refreshTokenHash: null, // Global logout: Invalidate all devices
+    }).exec();
+  }
 }

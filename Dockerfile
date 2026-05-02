@@ -4,20 +4,23 @@ FROM node:20-alpine
 # Create app directory
 WORKDIR /usr/src/app
 
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# Install dependencies first (for better caching)
 COPY package*.json ./
-
-# Install app dependencies
 RUN npm install
 
-# Bundle app source
+# Copy source and build
 COPY . .
-
-# Build the NestJS application
 RUN npm run build
 
-# Expose the port the app runs on
+# Remove development dependencies to reduce attack surface
+RUN npm prune --production
+
+# SECURITY: Set the user to 'node' instead of 'root'
+# This is a critical production senior pattern.
+USER node
+
+# Expose port
 EXPOSE 3000
 
-# Start the application using the production build
+# Start production build
 CMD ["npm", "run", "start:prod"]

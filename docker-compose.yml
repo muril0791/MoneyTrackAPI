@@ -1,67 +1,63 @@
-# version: '3.8'
-
-# services:
-#   # --- AMBIENTE DE PRODUÇÃO (Branch: main) ---
-#   # Acessível via: https://moneytrack-api.muriloferreira.dev
-#   api_prod:
-#     build: .
-#     container_name: moneytrack_api_prod
-#     restart: always
-#     ports:
-#       - "3000:3000"
-#     environment:
-#       - PORT=3000
-#       - NODE_ENV=production
-#       # 'host.docker.internal' permite que o container fale com o Mongo instalado no seu Windows
-#       - MONGODB_URI=mongodb://host.docker.internal:27017/moneytrack_prod
-#       - JWT_SECRET=sua_chave_secreta_producao
-#     extra_hosts:
-#       - "host.docker.internal:host-gateway"
-#     networks:
-#       - moneytrack_network
-
-#   # --- AMBIENTE DE DESENVOLVIMENTO (Branch: dev) ---
-#   # Acessível via: https://moneytrack-dev-api.muriloferreira.dev
-#   api_dev:
-#     build: .
-#     container_name: moneytrack_api_dev
-#     restart: always
-#     ports:
-#       - "3001:3000" # Mapeia a porta 3001 do Windows para a 3000 do container
-#     environment:
-#       - PORT=3000
-#       - NODE_ENV=development
-#       - MONGODB_URI=mongodb://host.docker.internal:27017/moneytrack_dev
-#       - JWT_SECRET=sua_chave_teste_dev
-#     extra_hosts:
-#       - "host.docker.internal:host-gateway"
-#     networks:
-#       - moneytrack_network
-
-# networks:
-#   moneytrack_network:
-#     driver: bridge
-
-
 version: '3.8'
 
 services:
-  # O Docker só vai subir o serviço se a variável for passada
-  api:
+  # --- DATABASE ---
+  mongodb:
+    image: mongo:latest
+    container_name: moneytrack_db
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-password123}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - moneytrack_network
+
+  # --- PRODUCTION INSTANCE ---
+  api_prod:
     build: .
-    container_name: ${CONTAINER_NAME}
+    container_name: moneytrack_api_prod
     restart: always
     ports:
-      - "${PORT}:3000"
+      - "3000:3000"
     environment:
       - PORT=3000
-      - NODE_ENV=${NODE_ENV}
-      - MONGODB_URI=mongodb://host.docker.internal:27017/${DB_NAME}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI_PROD}
+      - JWT_SECRET=${JWT_SECRET_PROD}
+      - CORS_ORIGINS=${CORS_ORIGINS_PROD}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+    depends_on:
+      - mongodb
+    networks:
+      - moneytrack_network
+
+  # --- DEVELOPMENT INSTANCE ---
+  api_dev:
+    build: .
+    container_name: moneytrack_api_dev
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - MONGODB_URI=${MONGODB_URI_DEV}
+      - JWT_SECRET=${JWT_SECRET_DEV}
+      - CORS_ORIGINS=${CORS_ORIGINS_DEV}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+    depends_on:
+      - mongodb
     networks:
       - moneytrack_network
 
 networks:
   moneytrack_network:
     driver: bridge
+
+volumes:
+  mongodb_data:

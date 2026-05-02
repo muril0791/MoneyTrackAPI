@@ -1,45 +1,135 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
+import { MailService } from '../common/mail/mail.service';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (user && await bcrypt.compare(pass, user.passwordHash)) {
-      const { passwordHash, ...result } = user.toObject();
+      const { passwordHash, refreshTokenHash, ...result } = user.toObject();
       return result;
     }
     return null;
   }
 
+  /**
+   * Generates tokens and stores the hash of the refresh token in the DB.
+   */
   async login(user: any) {
     const payload = { email: user.email, sub: user._id, displayName: user.displayName };
+    const accessToken = this.jwtService.sign(payload);
+
+    const refreshToken = this.jwtService.sign(
+      { sub: user._id, type: 'refresh' },
+      { expiresIn: '7d' },
+    );
+
+    // Hash and save refresh token (Senior level: Never store tokens in plain text)
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(refreshToken, salt);
+    await this.usersService.updateRefreshToken(user._id, hash);
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: 900,
       user: {
         id: user._id,
         email: user.email,
-        displayName: user.displayName
-      }
+        displayName: user.displayName,
+      },
     };
+  }
+
+  async logout(userId: string) {
+    await this.usersService.updateRefreshToken(userId, null);
+    return { message: 'Logout realizado com sucesso.' };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    try {
+      const decoded = this.jwtService.verify(refreshToken);
+      if (decoded.type !== 'refresh') throw new UnauthorizedException();
+
+      const user = await this.usersService.findById(decoded.sub);
+      if (!user || !user.refreshTokenHash) throw new UnauthorizedException();
+
+      // Validate refresh token hash
+      const isMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+      if (!isMatch) throw new UnauthorizedException();
+
+      return this.login(user);
+    } catch (error) {
+      throw new UnauthorizedException('Sessão expirada. Faça login novamente.');
+    }
   }
 
   async register(email: string, pass: string, displayName: string) {
     const existing = await this.usersService.findByEmail(email);
-    if (existing) {
-      throw new BadRequestException('User already exists');
-    }
-    const salt = await bcrypt.genSalt();
+    if (existing) throw new BadRequestException('Não foi possível criar a conta.');
+    
+    const salt = await bcrypt.genSalt(12);
     const hash = await bcrypt.hash(pass, salt);
     const user = await this.usersService.create(displayName, email, hash);
-    
     return this.login(user);
   }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    // Security: Do not reveal if user exists or not
+    if (!user) return { message: 'Se o e-mail existir, um link de recuperação será enviado.' };
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = await bcrypt.hash(resetToken, 10);
+    
+    // Token expires in 1 hour
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 1);
+
+    await this.usersService.updatePasswordReset(user._id.toString(), resetTokenHash, expires);
+
+    // REAL EMAIL SENDING VIA RESEND
+    const resetLink = `http://localhost:5173/#/reset-password?token=${resetToken}&email=${user.email}`;
+    await this.mailService.sendPasswordResetEmail(user.email, resetLink);
+
+    return { message: 'Se o e-mail existir, um link de recuperação será enviado.' };
+  }
+
+  async resetPassword(email: string, token: string, newPass: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.resetPasswordToken || !user.resetPasswordExpires) {
+      throw new BadRequestException('Link de recuperação inválido ou expirado.');
+    }
+
+    // Check expiration
+    if (new Date() > user.resetPasswordExpires) {
+      throw new BadRequestException('Link de recuperação expirado.');
+    }
+
+    // Verify token hash
+    const isMatch = await bcrypt.compare(token, user.resetPasswordToken);
+    if (!isMatch) {
+      throw new BadRequestException('Link de recuperação inválido.');
+    }
+
+    // Hash new password and update
+    const salt = await bcrypt.genSalt(12);
+    const hash = await bcrypt.hash(newPass, salt);
+    await this.usersService.updatePassword(user._id.toString(), hash);
+
+    return { message: 'Senha atualizada com sucesso.' };
+  }
+
 }
