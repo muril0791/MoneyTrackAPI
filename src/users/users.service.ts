@@ -39,4 +39,8 @@ export class UsersService {
       refreshTokenHash: null, // Global logout: Invalidate all devices
     }).exec();
   }
+
+  async updateProfile(userId: string, data: Partial<User>): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(userId, { $set: data }, { new: true }).exec();
+  }
 }

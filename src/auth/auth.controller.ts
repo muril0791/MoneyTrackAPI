@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus, Req, Patch } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
@@ -7,6 +7,7 @@ import { SignupDto } from './dto/signup.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -60,5 +61,12 @@ export class AuthController {
   async logout(@Req() req: any) {
     const userId = req.user._id.toString();
     return this.authService.logout(userId);
+  }
+
+  @Patch('profile')
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(@Req() req: any, @Body() body: UpdateProfileDto) {
+    const userId = req.user._id.toString();
+    return this.authService.updateProfile(userId, body);
   }
 }
