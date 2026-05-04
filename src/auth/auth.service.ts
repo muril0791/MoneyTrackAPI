@@ -94,14 +94,14 @@ export class AuthService {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenHash = await bcrypt.hash(resetToken, 10);
     
-    // Token expires in 1 hour
-    const expires = new Date();
-    expires.setHours(expires.getHours() + 1);
+    // Token expires in 1 hour (Absolute UTC math is safer for Docker/Timezones)
+    const expires = new Date(Date.now() + 3600 * 1000);
 
     await this.usersService.updatePasswordReset(user._id.toString(), resetTokenHash, expires);
 
-    // REAL EMAIL SENDING VIA RESEND
-    const resetLink = `http://localhost:5173/#/reset-password?token=${resetToken}&email=${user.email}`;
+    // Dynamic URL from env (Senior practice)
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/#/reset-password?token=${resetToken}&email=${user.email}`;
     await this.mailService.sendPasswordResetEmail(user.email, resetLink);
 
     return { message: 'Se o e-mail existir, um link de recuperação será enviado.' };
