@@ -132,4 +132,32 @@ export class AuthService {
     return { message: 'Senha atualizada com sucesso.' };
   }
 
+  async updateProfile(userId: string, data: any) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new UnauthorizedException();
+
+    const updateData: any = {};
+
+    if (data.email && data.email !== user.email) {
+      const existing = await this.usersService.findByEmail(data.email);
+      if (existing) throw new BadRequestException('E-mail já está em uso.');
+      updateData.email = data.email;
+    }
+
+    if (data.displayName) {
+      updateData.displayName = data.displayName;
+    }
+
+    if (data.password) {
+      const salt = await bcrypt.genSalt(12);
+      updateData.passwordHash = await bcrypt.hash(data.password, salt);
+      updateData.refreshTokenHash = null; // Logout from other devices on password change
+    }
+
+    const updatedUser = await this.usersService.updateProfile(userId, updateData);
+    if (!updatedUser) throw new BadRequestException('Erro ao atualizar perfil.');
+
+    return this.login(updatedUser); // Return new tokens because displayName or email might have changed (payload)
+  }
+
 }

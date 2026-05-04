@@ -15,9 +15,6 @@ export class Goal extends Document {
   @Prop({ required: true, type: Number, default: 0 })
   currentAmount: number;
 
-  @Prop({ default: '#10b981' })
-  color: string;
-
   @Prop({ default: 'target' })
   icon: string;
 
