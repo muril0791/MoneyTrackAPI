@@ -17,21 +17,21 @@ export class MailService {
 
     try {
       await this.resend.emails.send({
-        from: from || 'MoneyTrack <onboarding@resend.dev>',
+        from: from || 'Track Finances <onboarding@resend.dev>',
         to: email,
-        subject: 'Recuperação de Senha - MoneyTrack',
+        subject: 'Recuperação de Senha - Track Finances',
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <h2 style="color: #10b981;">Recuperar Senha</h2>
-            <p>Olá,</p>
-            <p>Você solicitou a redefinição de sua senha no MoneyTrack. Clique no botão abaixo para criar uma nova senha:</p>
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+            <h2 style="color: #10b981;">Track Finances</h2>
+            <p style="color: #1e293b;">Olá,</p>
+            <p style="color: #1e293b;">Você solicitou a redefinição de sua senha no Track Finances. Clique no botão abaixo para criar uma nova senha:</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Redefinir Senha</a>
+              <a href="${resetLink}" style="background-color: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block;">Redefinir Minha Senha</a>
             </div>
             <p style="color: #64748b; font-size: 14px;">Este link expira em 1 hora.</p>
-            <p style="color: #64748b; font-size: 14px;">Se você não solicitou isso, pode ignorar este e-mail.</p>
+            <p style="color: #64748b; font-size: 14px;">Se você não solicitou isso, pode ignorar este e-mail com segurança.</p>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-            <p style="font-size: 12px; color: #94a3b8;">MoneyTrack Team</p>
+            <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 Track Finances Team</p>
           </div>
         `,
       });
